@@ -141,36 +141,38 @@ TEMPLATES = {
     }
 }
 
-# Language-specific URL patterns
-LANG_PATTERNS = {
-    "fr": {
-        "from": ["/en-", "/en/", "/product/", "/women/", "/men/"],
-        "to": ["/fr/", "/fr/", "/produit/", "/femmes/", "/hommes/"]
-    },
-    "jp": {
-        "from": ["/en-", "/en/"],
-        "to": ["/ja/", "/ja/"]
-    },
-    "zh": {
-        "from": ["/en-", "/en/"],
-        "to": ["/zh/", "/zh/"]
-    }
-}
-
 def convert_url_to_language(url, target_lang):
-    """Convert English URL to target language URL."""
+    """Convert English (en-us or en-ca) URL to target language URL."""
     if target_lang == "en":
         return url
-        
-    patterns = LANG_PATTERNS.get(target_lang)
-    if not patterns:
-        return url
-        
-    result = url
-    for from_pattern, to_pattern in zip(patterns["from"], patterns["to"]):
-        result = result.replace(from_pattern, to_pattern)
-    
-    return result
+
+    target_locales = {
+        "fr": "fr-ca",
+        "jp": "ja-jp",
+        "zh": "zh-cn"
+    }
+
+    target_locale = target_locales.get(target_lang)
+    if not target_locale:
+        logging.warning(f"Unsupported target language for URL conversion: {target_lang}")
+        return url # Return original URL if language not supported
+
+    # Use regex to replace /en-us/ or /en-ca/
+    new_url, count = re.subn(r'/en-(us|ca)/', f'/{target_locale}/', url)
+
+    if count == 0:
+        logging.warning(f"Could not find /en-us/ or /en-ca/ pattern in URL: {url}")
+        return url # Return original URL if pattern not found
+
+    # Apply French-specific path changes *after* locale change
+    if target_lang == "fr":
+        new_url = new_url.replace("/product/", "/produit/")
+        new_url = new_url.replace("/men/", "/hommes/")
+        new_url = new_url.replace("/women/", "/femmes/")
+        # Add other French specific replacements if needed
+
+    logging.info(f"Converted URL for {target_lang}: {new_url}")
+    return new_url
 
 def extract_product_id(url):
     """Extract product ID from SSENSE URL."""
@@ -277,8 +279,9 @@ def generate():
                     
                     if product:
                         logging.info(f"Found product: {product.get('brand')} - {product.get('subcategory')}")
+                        # Generate URLs for all languages using the *corrected* function
                         product['urls'] = {
-                            'en': url,
+                            'en': url, # Assume input is always 'en'
                             'fr': convert_url_to_language(url, 'fr'),
                             'jp': convert_url_to_language(url, 'jp'),
                             'zh': convert_url_to_language(url, 'zh')
@@ -328,8 +331,13 @@ def generate():
         }), 500
 
 if __name__ == '__main__':
-    # Get port from environment variable (Render sets this automatically)
-    port = int(os.getenv('PORT', 10000))
+    # Use different port for local development
+    if os.getenv('FLASK_ENV') == 'development':
+        port = 3000
+        debug = True
+    else:
+        # Render configuration
+        port = int(os.getenv('PORT', 10000))
+        debug = False
     
-    # Always use 0.0.0.0 as host
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=debug)
