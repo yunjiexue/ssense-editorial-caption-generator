@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSENSE Editorial Caption Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+            height: 40px;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+        }
+        .generate-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .generate-button:hover {
+            background-color: #333;
+        }
+        .output-group {
+            margin-top: 20px;
+        }
+        .caption-box {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .language-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .copy-button {
+            float: right;
+            padding: 6px 12px;
+            background-color: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+        .copy-button:hover {
+            background-color: #888;
+        }
+        .caption-text {
+            margin-top: 10px;
+            line-height: 1.5;
+            color: #444;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>SSENSE Editorial Caption Generator</h1>
+    
+    <div class="input-group">
+        <label for="urls">Enter English Product URLs (one per line):</label>
+        <textarea id="urls" placeholder="https://www.ssense.com/en-us/men/product/..."></textarea>
+    </div>
+
+    <div class="input-group">
+        <label for="talent_name">Talent Name (optional):</label>
+        <input type="text" id="talent_name" placeholder="Enter talent name" class="form-control">
+    </div>
+
+    <div class="input-group">
+        <label for="template">Select Template Style:</label>
+        <select id="template">
+            <option value="featured">featured in this image</option>
+            <option value="also_featured">also featured in this image</option>
+            <option value="model_wears">model wears</option>
+            <option value="model_right">model (right) wears</option>
+            <option value="model_left">model (left) wears</option>
+            <option value="model_middle">model (middle) wears</option>
+            <option value="featured_top">featured in top image</option>
+            <option value="top_model">top image: model wears</option>
+            <option value="talent">talent name wears</option>
+            <option value="talent_right">talent name (right) wears</option>
+            <option value="talent_left">talent name (left) wears</option>
+            <option value="top_talent">top image: talent name wears</option>
+        </select>
+    </div>
+
+    <button class="generate-button" onclick="generateCaptions()">Generate Captions in All Languages</button>
+
+    <div id="output" class="output-group"></div>
+
+    <script>
+        function generateCaptions() {
+            const urls = document.getElementById('urls').value.split('\n').filter(url => url.trim());
+            const template = document.getElementById('template').value;
+            const talentName = document.getElementById('talent_name').value.trim();
+
+            if (urls.length === 0) {
+                alert('Please enter at least one URL');
+                return;
+            }
+
+            // Show loading state
+            document.querySelector('.generate-button').textContent = 'Generating...';
+            document.querySelector('.generate-button').disabled = true;
+
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    urls: urls,
+                    template: template,
+                    talent_name: talentName
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const output = document.getElementById('output');
+                output.innerHTML = '';
+
+                if (data.errors && data.errors.length > 0) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'caption-box';
+                    errorDiv.style.color = '#d32f2f';
+                    errorDiv.textContent = 'Errors: ' + data.errors.join(', ');
+                    output.appendChild(errorDiv);
+                }
+
+                if (data.captions) {
+                    const languages = {
+                        'en': 'English',
+                        'fr': 'French',
+                        'jp': 'Japanese',
+                        'zh': 'Chinese'
+                    };
+
+                    for (const [lang, caption] of Object.entries(data.captions)) {
+                        const captionBox = document.createElement('div');
+                        captionBox.className = 'caption-box';
+                        
+                        const langLabel = document.createElement('div');
+                        langLabel.className = 'language-label';
+                        langLabel.textContent = languages[lang];
+                        captionBox.appendChild(langLabel);
+
+                        const copyButton = document.createElement('button');
+                        copyButton.className = 'copy-button';
+                        copyButton.textContent = 'Copy';
+                        copyButton.onclick = () => {
+                            navigator.clipboard.writeText(caption);
+                            copyButton.textContent = 'Copied!';
+                            setTimeout(() => copyButton.textContent = 'Copy', 2000);
+                        };
+                        captionBox.appendChild(copyButton);
+
+                        const captionText = document.createElement('div');
+                        captionText.className = 'caption-text';
+                        captionText.textContent = caption;
+                        captionBox.appendChild(captionText);
+
+                        output.appendChild(captionBox);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('output').innerHTML = 
+                    '<div class="caption-box" style="color: #d32f2f;">Error generating captions</div>';
+            })
+            .finally(() => {
+                // Reset button state
+                document.querySelector('.generate-button').textContent = 'Generate Captions in All Languages';
+                document.querySelector('.generate-button').disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

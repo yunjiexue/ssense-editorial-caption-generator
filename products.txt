@@ -1,0 +1,29 @@
+{"product_id": "18516331", "product_code": "251892M131008", "brand": "Martine Rose", "subcategory_id": "131", "subcategory": "BELTS & SUSPENDERS"}
+{"product_id": "17468731", "product_code": "251586M214001", "brand": "Kijun", "subcategory_id": "214", "subcategory": "TANK TOPS"}
+{"product_id": "17490991", "product_code": "251209F124003", "brand": "Crocs", "subcategory_id": "124", "subcategory": "FLAT SANDALS"}
+{"product_id": "17496811", "product_code": "251010F128061", "brand": "Puma", "subcategory_id": "128", "subcategory": "LOW TOP SNEAKERS"}
+{"product_id": "17499921", "product_code": "251208F005020", "brand": "Prada Eyewear", "subcategory_id": "5", "subcategory": "SUNGLASSES"}
+{"product_id": "17501251", "product_code": "251267M255000", "brand": "PDF", "subcategory_id": "255", "subcategory": "LACE-UP BOOTS"}
+{"product_id": "17501811", "product_code": "251215M139000", "brand": "Le PERE", "subcategory_id": "139", "subcategory": "CAPS"}
+{"product_id": "17523511", "product_code": "251232M192037", "brand": "Willy Chavarria", "subcategory_id": "192", "subcategory": "SHIRTS"}
+{"product_id": "17530171", "product_code": "251055F015005", "brand": "rag & bone", "subcategory_id": "15", "subcategory": "BEACH HATS"}
+{"product_id": "17556361", "product_code": "251546M213194", "brand": "BAPE", "subcategory_id": "213", "subcategory": "T-SHIRTS"}
+{"product_id": "17559471", "product_code": "251546F098000", "brand": "BAPE", "subcategory_id": "98", "subcategory": "SWEATSHIRTS"}
+{"product_id": "17580701", "product_code": "251154M175001", "brand": "Helmut Lang", "subcategory_id": "175", "subcategory": "BOMBERS"}
+{"product_id": "17658091", "product_code": "251345F358017", "brand": "Mugler", "subcategory_id": "358", "subcategory": "BODYSUITS"}
+{"product_id": "17663751", "product_code": "251376M193006", "brand": "Burberry", "subcategory_id": "193", "subcategory": "SHORTS"}
+{"product_id": "17664441", "product_code": "251251M201006", "brand": "Balmain", "subcategory_id": "201", "subcategory": "CREWNECKS"}
+{"product_id": "17671991", "product_code": "251600F093001", "brand": "Isabel Marant", "subcategory_id": "93", "subcategory": "LONG SKIRTS"}
+{"product_id": "17678761", "product_code": "251901F076004", "brand": "Shushu/Tong", "subcategory_id": "76", "subcategory": "SOCKS"}
+{"product_id": "17679261", "product_code": "251901F052079", "brand": "Shushu/Tong", "subcategory_id": "52", "subcategory": "SHORT DRESSES"}
+{"product_id": "17690361", "product_code": "251808F100003", "brand": "KALLMEYER", "subcategory_id": "100", "subcategory": "V-NECKS"}
+{"product_id": "17692801", "product_code": "251338F088006", "brand": "Chloé", "subcategory_id": "88", "subcategory": "SHORTS"}
+{"product_id": "17698851", "product_code": "251288F069003", "brand": "ALAINPAUL", "subcategory_id": "69", "subcategory": "JEANS"}
+{"product_id": "17699271", "product_code": "251913F024001", "brand": "La Manso", "subcategory_id": "24", "subcategory": "RINGS"}
+{"product_id": "17705181", "product_code": "251278F096008", "brand": "High Sport", "subcategory_id": "96", "subcategory": "CREWNECKS"}
+{"product_id": "17705731", "product_code": "251232F086028", "brand": "Willy Chavarria", "subcategory_id": "86", "subcategory": "LOUNGE PANTS"}
+{"product_id": "17733011", "product_code": "251779F125033", "brand": "Maryam Nassir Zadeh", "subcategory_id": "125", "subcategory": "HEELED SANDALS"}
+{"product_id": "17733451", "product_code": "251161F110053", "brand": "Fear of God ESSENTIALS", "subcategory_id": "110", "subcategory": "T-SHIRTS"}
+{"product_id": "17824191", "product_code": "251435M191011", "brand": "RRL", "subcategory_id": "191", "subcategory": "TROUSERS"}
+{"product_id": "18391321", "product_code": "251639F087007", "brand": "Renaissance Renaissance", "subcategory_id": "87", "subcategory": "TROUSERS"}
+{"product_id": "18414131", "product_code": "251104M619005", "brand": "MAISON BALZAC", "subcategory_id": "619", "subcategory": "CANDLE HOLDERS"} 
