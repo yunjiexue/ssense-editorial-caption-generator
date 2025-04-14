@@ -284,13 +284,11 @@ def generate():
     })
 
 if __name__ == '__main__':
-    try:
-        port = int(os.getenv('PORT', 3000))  # Using port 3000 to avoid conflicts
-        app.run(host='0.0.0.0', port=port, debug=True)
-    except Exception as e:
-        print(f"Error starting server: {e}")
-        # Try alternative port if 3000 is busy
-        try:
-            app.run(host='0.0.0.0', port=3001, debug=True)
-        except Exception as e:
-            print(f"Error starting server on alternative port: {e}")
+    # Get port from environment variable (Render sets this automatically)
+    port = int(os.getenv('PORT', 3000))
+    
+    # In production, debug should be False
+    debug = os.getenv('FLASK_ENV') == 'development'
+    
+    # Host should be 0.0.0.0 for Render
+    app.run(host='0.0.0.0', port=port, debug=debug)
