@@ -6,32 +6,35 @@ import re
 import certifi
 import logging
 from datetime import datetime
+import sys
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
+
 # MongoDB setup using environment variables
 mongodb_uri = os.getenv('MONGODB_URI')
-db_name = os.getenv('DB_NAME', 'products')  # Default to 'products' if not set
+db_name = os.getenv('DB_NAME', 'products')
 
 try:
     # Connect to MongoDB Atlas with SSL certificate verification
+    logging.info(f"Attempting to connect to MongoDB at {mongodb_uri}")
     client = MongoClient(mongodb_uri, tlsCAFile=certifi.where())
     db = client[db_name]
     # Test the connection
     client.admin.command('ping')
-    print("Successfully connected to MongoDB!")
+    logging.info("Successfully connected to MongoDB!")
 except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-
-# Add this after the MongoDB setup
-logging.basicConfig(
-    filename='product_updates.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s'
-)
+    logging.error(f"Error connecting to MongoDB: {str(e)}")
+    raise
 
 def get_translated_subcategory(subcategory_en, target_lang):
     """Get translated subcategory from categorys collection."""
@@ -244,49 +247,89 @@ def index():
     return render_template('index.html', templates=TEMPLATES)
 
 @app.route('/generate', methods=['POST'])
-def generate_caption():
+def generate():
     try:
-        data = request.get_json()
+        data = request.json
         urls = data.get('urls', [])
-        lang = data.get('lang', 'en')
-        template_key = data.get('template', 'featured')
-        
-        logging.info(f"Generating caption for URLs: {urls} in language: {lang}")
-        
-        # Find products
-        products = []
-        for url in urls:
-            product = get_product_by_url(url)
-            if product:
-                products.append(product)
-        
-        if not products:
-            logging.warning("No products found for the provided URLs")
-            return jsonify({
-                "error": "No products found",
-                "caption": "",
-                "urls": urls
-            })
+        template_type = data.get('template', "featured")
+        talent_name = data.get('talent_name', '')
 
-        # Generate caption
-        caption = generate_caption(products, TEMPLATES[lang][template_key], lang)
+        logging.info(f"Received request to generate caption for URLs: {urls}")
         
-        logging.info(f"Generated caption: {caption}")
+        if not urls:
+            logging.warning("No URLs provided")
+            return jsonify({'error': 'No URLs provided'}), 400
+        
+        products = []
+        errors = []
+        
+        for url in urls:
+            try:
+                product_id = extract_product_id(url)
+                if product_id:
+                    logging.info(f"Looking up product ID: {product_id}")
+                    # Try to find product using string product_id
+                    product = db.products.find_one({"product_id": product_id})
+                    
+                    # If not found, try with integer product_id
+                    if not product:
+                        product = db.products.find_one({"product_id": int(product_id)})
+                    
+                    if product:
+                        logging.info(f"Found product: {product.get('brand')} - {product.get('subcategory')}")
+                        product['urls'] = {
+                            'en': url,
+                            'fr': convert_url_to_language(url, 'fr'),
+                            'jp': convert_url_to_language(url, 'jp'),
+                            'zh': convert_url_to_language(url, 'zh')
+                        }
+                        products.append(product)
+                    else:
+                        error_msg = f"Product ID {product_id} not found in database"
+                        logging.warning(error_msg)
+                        errors.append(error_msg)
+            except Exception as e:
+                error_msg = f"Error processing URL {url}: {str(e)}"
+                logging.error(error_msg)
+                errors.append(error_msg)
+
+        # Generate captions in all languages
+        captions = {}
+        for lang in ['en', 'fr', 'jp', 'zh']:
+            try:
+                template = TEMPLATES[lang][template_type]
+                if talent_name and ('talent' in template_type or 'talent' in template.lower()):
+                    if lang == 'fr':
+                        template = template.replace('[Nom du talent]', talent_name)
+                    elif lang == 'jp':
+                        template = template.replace('[タレント名]', talent_name)
+                    elif lang == 'zh':
+                        template = template.replace('[艺人姓名]', talent_name)
+                    else:
+                        template = template.replace('[Talent name]', talent_name)
+                captions[lang] = generate_caption(products, template, lang)
+                logging.info(f"Generated caption for {lang}: {captions[lang]}")
+            except Exception as e:
+                error_msg = f"Error generating caption for language {lang}: {str(e)}"
+                logging.error(error_msg)
+                errors.append(error_msg)
+        
         return jsonify({
-            "caption": caption,
-            "urls": urls
+            'captions': captions,
+            'errors': errors,
+            'success': len(products) > 0
         })
     except Exception as e:
-        logging.error(f"Error generating caption: {str(e)}")
+        error_msg = f"Unexpected error: {str(e)}"
+        logging.error(error_msg)
         return jsonify({
-            "error": str(e),
-            "caption": "",
-            "urls": urls
+            'error': error_msg,
+            'success': False
         }), 500
 
 if __name__ == '__main__':
     # Get port from environment variable (Render sets this automatically)
-    port = int(os.getenv('PORT', 10000))  # Changed default to 10000 as per Render's requirements
+    port = int(os.getenv('PORT', 10000))
     
-    # Always use 0.0.0.0 as host for Render
-    app.run(host='0.0.0.0', port=port)  # Removed debug mode for production
+    # Always use 0.0.0.0 as host
+    app.run(host='0.0.0.0', port=port)
