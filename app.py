@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import os
 import re
 import certifi
+import logging
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,13 @@ try:
     print("Successfully connected to MongoDB!")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
+
+# Add this after the MongoDB setup
+logging.basicConfig(
+    filename='product_updates.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
 
 def get_translated_subcategory(subcategory_en, target_lang):
     """Get translated subcategory from categorys collection."""
@@ -209,86 +218,75 @@ def generate_caption(products, template, lang="en"):
         conjunction = " and " if lang == "en" else " et "
         return f"{template} {', '.join(product_links[:-1])},{conjunction}{product_links[-1]}."
 
+def get_product_by_url(url):
+    """Get product from database by URL."""
+    try:
+        # Extract product ID from URL
+        product_id = extract_product_id(url)
+        if not product_id:
+            logging.warning(f"Could not extract product ID from URL: {url}")
+            return None
+            
+        # Try to find product
+        product = db.products.find_one({"product_id": int(product_id)})
+        if not product:
+            logging.warning(f"Product not found in database: ID {product_id}")
+            return None
+            
+        logging.info(f"Found product: {product['brand']} - {product['subcategory']} (ID: {product_id})")
+        return product
+    except Exception as e:
+        logging.error(f"Error finding product for URL {url}: {str(e)}")
+        return None
+
 @app.route('/')
 def index():
     return render_template('index.html', templates=TEMPLATES)
 
 @app.route('/generate', methods=['POST'])
-def generate():
-    data = request.json
-    urls = data.get('urls', [])
-    template_type = data.get('template', "featured")  # Get template type
-    talent_name = data.get('talent_name', '')  # Get talent name
-    
-    if not urls:
-        return jsonify({'error': 'No URLs provided'}), 400
-    
-    products = []
-    errors = []
-    
-    for url in urls:
-        product_id = extract_product_id(url)
-        if product_id:
-            try:
-                # Try to find product using string product_id
-                product = db.products.find_one({"product_id": product_id})
-                
-                # If not found, try with integer product_id
-                if not product:
-                    product = db.products.find_one({"product_id": int(product_id)})
-                
-                if product:
-                    # Generate URLs for all languages
-                    product['urls'] = {
-                        'en': url,
-                        'fr': convert_url_to_language(url, 'fr'),
-                        'jp': convert_url_to_language(url, 'jp'),
-                        'zh': convert_url_to_language(url, 'zh')
-                    }
-                    products.append(product)
-                else:
-                    errors.append(f"Product ID {product_id} not found in database")
-            except Exception as e:
-                errors.append(f"Database error for product {product_id}: {str(e)}")
-                print(f"Database error: {str(e)}")
-        else:
-            errors.append(f"Could not extract product ID from URL: {url}")
-    
-    # Generate captions in all languages
-    captions = {}
-    for lang in ['en', 'fr', 'jp', 'zh']:
-        template = TEMPLATES[lang][template_type]
-        # Replace talent name placeholders in all languages if provided
-        if talent_name:
-            if 'talent' in template_type or 'talent' in template.lower():
-                if lang == 'fr':
-                    template = template.replace('[Nom du talent]', talent_name)
-                elif lang == 'jp':
-                    template = template.replace('[タレント名]', talent_name)
-                elif lang == 'zh':
-                    template = template.replace('[艺人姓名]', talent_name)
-                else:  # English
-                    template = template.replace('[Talent name]', talent_name)
-        captions[lang] = generate_caption(products, template, lang)
-    
-    # Add debug information
-    print(f"URLs received: {urls}")
-    print(f"Products found: {products}")
-    print(f"Generated captions: {captions}")
-    print(f"Errors: {errors}")
-    
-    return jsonify({
-        'captions': captions,
-        'errors': errors,
-        'success': len(products) > 0
-    })
+def generate_caption():
+    try:
+        data = request.get_json()
+        urls = data.get('urls', [])
+        lang = data.get('lang', 'en')
+        template_key = data.get('template', 'featured')
+        
+        logging.info(f"Generating caption for URLs: {urls} in language: {lang}")
+        
+        # Find products
+        products = []
+        for url in urls:
+            product = get_product_by_url(url)
+            if product:
+                products.append(product)
+        
+        if not products:
+            logging.warning("No products found for the provided URLs")
+            return jsonify({
+                "error": "No products found",
+                "caption": "",
+                "urls": urls
+            })
+
+        # Generate caption
+        caption = generate_caption(products, TEMPLATES[lang][template_key], lang)
+        
+        logging.info(f"Generated caption: {caption}")
+        return jsonify({
+            "caption": caption,
+            "urls": urls
+        })
+    except Exception as e:
+        logging.error(f"Error generating caption: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "caption": "",
+            "urls": urls
+        }), 500
 
 if __name__ == '__main__':
     # Get port from environment variable (Render sets this automatically)
-    port = int(os.getenv('PORT', 3000))
+    port = int(os.getenv('PORT', 10000))  # Changed default to 10000 as per Render's requirements
     
-    # In production, debug should be False
-    debug = os.getenv('FLASK_ENV') == 'development'
-    
-    # Host should be 0.0.0.0 for Render
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    # Always use 0.0.0.0 as host for Render
+    app.run(host='0.0.0.0', port=port)  # Removed debug mode for production
