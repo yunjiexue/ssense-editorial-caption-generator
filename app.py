@@ -81,10 +81,10 @@ def get_translated_subcategory(subcategory_en, target_lang):
         print(f"Error looking up translation: {e}")  # Debug log
         return subcategory_en
 
-# Caption templates for each language
+# Caption templates for each language - UPDATED
 TEMPLATES = {
     "en": {
-        "featured": "Featured In This Image:",
+        "featured": "Featured In This Image:", # Kept original, wasn't in the provided list
         "also_featured": "Also Featured In This Image:",
         "model_wears": "Model wears",
         "model_right": "Model (right) wears",
@@ -98,46 +98,46 @@ TEMPLATES = {
         "top_talent": "Top Image: [Talent name] wears"
     },
     "fr": {
-        "featured": "Présenté Dans Cette Image:",
-        "also_featured": "Également Présenté Dans Cette Image:",
-        "model_wears": "Le mannequin porte",
-        "model_right": "Le mannequin (à droite) porte",
-        "model_left": "Le mannequin (à gauche) porte",
-        "model_middle": "Le mannequin (au milieu) porte",
-        "featured_top": "Présenté Dans L'Image Du Haut:",
-        "top_model": "Image Du Haut: Le mannequin porte",
-        "talent": "[Nom du talent] porte",
-        "talent_right": "[Nom du talent] (à droite) porte",
-        "talent_left": "[Nom du talent] (à gauche) porte",
-        "top_talent": "Image Du Haut: [Nom du talent] porte"
+        "featured": "Présenté Dans Cette Image:", # Kept original
+        "also_featured": "Aussi en vedette sur cette image:",
+        "model_wears": "Le modèle porte:",
+        "model_right": "Le modèle (à droite) porte:",
+        "model_left": "Le modèle (à gauche) porte:",
+        "model_middle": "Le modèle (au centre) porte:",
+        "featured_top": "En vedette sur l'image du haut:",
+        "top_model": "Sur l'image du haut, le modèle porte:",
+        "talent": "[Talent name] porte:",
+        "talent_right": "[Talent name] (à droite) porte:",
+        "talent_left": "[Talent name] (à gauche) porte:",
+        "top_talent": "Sur l'image précédente, [Talent name] porte:" # Note: User provided slightly different source for this one
     },
     "jp": {
-        "featured": "画像に登場するアイテム：",
-        "also_featured": "画像に登場する他のアイテム：",
-        "model_wears": "モデル着用：",
-        "model_right": "モデル（右）着用：",
-        "model_left": "モデル（左）着用：",
-        "model_middle": "モデル（中央）着用：",
-        "featured_top": "上の画像に登場するアイテム：",
-        "top_model": "上の画像：モデル着用：",
-        "talent": "[タレント名]着用：",
-        "talent_right": "[タレント名]（右）着用：",
-        "talent_left": "[タレント名]（左）着用：",
-        "top_talent": "上の画像：[タレント名]着用："
+        "featured": "画像に登場するアイテム：", # Kept original
+        "also_featured": "画像のアイテム：",
+        "model_wears": "モデル着用アイテム：",
+        "model_right": "モデル (右) ：",
+        "model_left": "モデル (左) ：",
+        "model_middle": "モデル (中央) ：",
+        "featured_top": "冒頭の画像のアイテム：",
+        "top_model": "冒頭の画像 モデル着用アイテム：",
+        "talent": "[Talent name] 着用アイテム：",
+        "talent_right": "[Talent name] (右) ：",
+        "talent_left": "[Talent name] (左) ：",
+        "top_talent": "冒頭の画像 [Talent name] 着用アイテム："
     },
     "zh": {
-        "featured": "图中精选单品：",
-        "also_featured": "图中其他精选单品：",
-        "model_wears": "模特穿着：",
-        "model_right": "模特（右）穿着：",
-        "model_left": "模特（左）穿着：",
-        "model_middle": "模特（中）穿着：",
-        "featured_top": "上图精选单品：",
-        "top_model": "上图：模特穿着：",
-        "talent": "[艺人姓名]穿着：",
-        "talent_right": "[艺人姓名]（右）穿着：",
-        "talent_left": "[艺人姓名]（左）穿着：",
-        "top_talent": "上图：[艺人姓名]穿着："
+        "featured": "图中精选单品：", # Kept original
+        "also_featured": "本图单品：",
+        "model_wears": "模特身着：",
+        "model_right": "模特（右）身着：",
+        "model_left": "模特（左）身着：",
+        "model_middle": "模特（中）身着：",
+        "featured_top": "顶图单品：",
+        "top_model": "顶图模特身着：",
+        "talent": "[Talent name]身着：",
+        "talent_right": "[Talent name]（右）身着：",
+        "talent_left": "[Talent name]（左）身着：",
+        "top_talent": "顶图[Talent name]身着："
     }
 }
 
