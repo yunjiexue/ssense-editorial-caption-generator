@@ -36,6 +36,66 @@ except Exception as e:
     logging.error(f"Error connecting to MongoDB: {str(e)}")
     raise
 
+# Caption templates for each language - RE-ADDED
+TEMPLATES = {
+    "en": {
+        "featured": "Featured In This Image:",
+        "also_featured": "Also Featured In This Image:",
+        "model_wears": "Model wears",
+        "model_right": "Model (right) wears",
+        "model_left": "Model (left) wears",
+        "model_middle": "Model (middle) wears",
+        "featured_top": "Featured In Top Image:",
+        "top_model": "Top Image: Model wears",
+        "talent": "[Talent name] wears",
+        "talent_right": "[Talent name] (right) wears",
+        "talent_left": "[Talent name] (left) wears",
+        "top_talent": "Top Image: [Talent name] wears"
+    },
+    "fr": {
+        "featured": "En vedette sur cette image:",
+        "also_featured": "Aussi en vedette sur cette image:",
+        "model_wears": "Le modèle porte:",
+        "model_right": "Le modèle (à droite) porte:",
+        "model_left": "Le modèle (à gauche) porte:",
+        "model_middle": "Le modèle (au centre) porte:",
+        "featured_top": "En vedette sur l'image du haut:",
+        "top_model": "Sur l'image du haut, le modèle porte:",
+        "talent": "[Talent name] porte:",
+        "talent_right": "[Talent name] (à droite) porte:",
+        "talent_left": "[Talent name] (à gauche) porte:",
+        "top_talent": "Sur l'image précédente, [Talent name] porte:"
+    },
+    "jp": {
+        "featured": "画像のアイテム：",
+        "also_featured": "画像のアイテム：",
+        "model_wears": "モデル着用アイテム：",
+        "model_right": "モデル (右) ：",
+        "model_left": "モデル (左) ：",
+        "model_middle": "モデル (中央) ：",
+        "featured_top": "冒頭の画像のアイテム：",
+        "top_model": "冒頭の画像 モデル着用アイテム：",
+        "talent": "[Talent name] 着用アイテム：",
+        "talent_right": "[Talent name] (右) ：",
+        "talent_left": "[Talent name] (左) ：",
+        "top_talent": "冒頭の画像 [Talent name] 着用アイテム："
+    },
+    "zh": {
+        "featured": "本图单品：",
+        "also_featured": "本图单品：",
+        "model_wears": "模特身着：",
+        "model_right": "模特（右）身着：",
+        "model_left": "模特（左）身着：",
+        "model_middle": "模特（中）身着：",
+        "featured_top": "顶图单品：",
+        "top_model": "顶图模特身着：",
+        "talent": "[Talent name]身着：",
+        "talent_right": "[Talent name]（右）身着：",
+        "talent_left": "[Talent name]（左）身着：",
+        "top_talent": "顶图[Talent name]身着："
+    }
+}
+
 def convert_url_to_language(url, target_lang):
     """Convert English (en-us or en-ca) URL to target language URL (e.g., /fr/, /ja/, /zh/)."""
     if target_lang == "en":
