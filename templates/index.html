@@ -112,6 +112,20 @@
         .db-note + .db-note {
              margin-top: 5px;
         }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 10px auto 0;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -143,6 +157,7 @@
     </div>
 
     <button class="generate-button" onclick="generateCaptions()">Generate Captions in All Languages</button>
+    <div id="loader" class="loader"></div>
 
     <div id="output" class="output-group"></div>
 
@@ -151,6 +166,9 @@
             const urls = document.getElementById('urls').value.split('\n').filter(url => url.trim());
             const template = document.getElementById('template').value;
             const talentName = document.getElementById('talent_name').value.trim();
+            const button = document.querySelector('.generate-button');
+            const loader = document.getElementById('loader');
+            const output = document.getElementById('output');
 
             if (urls.length === 0) {
                 alert('Please enter at least one URL');
@@ -158,8 +176,10 @@
             }
 
             // Show loading state
-            document.querySelector('.generate-button').textContent = 'Generating...';
-            document.querySelector('.generate-button').disabled = true;
+            button.textContent = 'Generating...';
+            button.disabled = true;
+            loader.style.display = 'block';
+            output.innerHTML = '';
 
             fetch('/generate', {
                 method: 'POST',
@@ -172,11 +192,13 @@
                     talent_name: talentName
                 }),
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                const output = document.getElementById('output');
-                output.innerHTML = '';
-
                 if (data.errors && data.errors.length > 0) {
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'caption-box';
@@ -184,7 +206,6 @@
                     errorDiv.textContent = 'Errors: ' + data.errors.join(', ');
                     output.appendChild(errorDiv);
                 }
-
                 if (data.captions) {
                     const languages = {
                         'en': 'English',
@@ -192,7 +213,6 @@
                         'jp': 'Japanese',
                         'zh': 'Chinese'
                     };
-
                     for (const [lang, caption] of Object.entries(data.captions)) {
                         const captionBox = document.createElement('div');
                         captionBox.className = 'caption-box';
@@ -222,14 +242,13 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('output').innerHTML = 
-                    '<div class="caption-box" style="color: #d32f2f;">Error generating captions</div>';
+                console.error('Fetch Error:', error);
+                output.innerHTML = `<div class="caption-box" style="color: #d32f2f;">An error occurred: ${error.message}. Please check the console for details.</div>`;
             })
             .finally(() => {
-                // Reset button state
-                document.querySelector('.generate-button').textContent = 'Generate Captions in All Languages';
-                document.querySelector('.generate-button').disabled = false;
+                button.textContent = 'Generate Captions in All Languages';
+                button.disabled = false;
+                loader.style.display = 'none';
             });
         }
     </script>
