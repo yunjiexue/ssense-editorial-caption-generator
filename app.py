@@ -84,7 +84,7 @@ def get_translated_subcategory(subcategory_en, target_lang):
 # Caption templates for each language - UPDATED
 TEMPLATES = {
     "en": {
-        "featured": "Featured In This Image:", # Kept original, wasn't in the provided list
+        "featured": "Featured In This Image:",
         "also_featured": "Also Featured In This Image:",
         "model_wears": "Model wears",
         "model_right": "Model (right) wears",
@@ -98,7 +98,7 @@ TEMPLATES = {
         "top_talent": "Top Image: [Talent name] wears"
     },
     "fr": {
-        "featured": "Présenté Dans Cette Image:", # Kept original
+        "featured": "En vedette sur cette image:",
         "also_featured": "Aussi en vedette sur cette image:",
         "model_wears": "Le modèle porte:",
         "model_right": "Le modèle (à droite) porte:",
@@ -109,10 +109,10 @@ TEMPLATES = {
         "talent": "[Talent name] porte:",
         "talent_right": "[Talent name] (à droite) porte:",
         "talent_left": "[Talent name] (à gauche) porte:",
-        "top_talent": "Sur l'image précédente, [Talent name] porte:" # Note: User provided slightly different source for this one
+        "top_talent": "Sur l'image précédente, [Talent name] porte:"
     },
     "jp": {
-        "featured": "画像に登場するアイテム：", # Kept original
+        "featured": "画像のアイテム：",
         "also_featured": "画像のアイテム：",
         "model_wears": "モデル着用アイテム：",
         "model_right": "モデル (右) ：",
@@ -126,7 +126,7 @@ TEMPLATES = {
         "top_talent": "冒頭の画像 [Talent name] 着用アイテム："
     },
     "zh": {
-        "featured": "图中精选单品：", # Kept original
+        "featured": "本图单品：",
         "also_featured": "本图单品：",
         "model_wears": "模特身着：",
         "model_right": "模特（右）身着：",
