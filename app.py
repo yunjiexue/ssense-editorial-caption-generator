@@ -37,29 +37,24 @@ except Exception as e:
     raise
 
 def convert_url_to_language(url, target_lang):
-    """Convert English (en-us or en-ca) URL to target language URL."""
+    """Convert English (en-us or en-ca) URL to target language URL (e.g., /fr/, /ja/, /zh/)."""
     if target_lang == "en":
         return url
 
-    target_locales = {
-        "fr": "fr-ca",
-        "jp": "ja-jp",
-        "zh": "zh-cn"
-    }
-
-    target_locale = target_locales.get(target_lang)
-    if not target_locale:
+    # Define supported target languages
+    supported_langs = ["fr", "ja", "zh"]
+    if target_lang not in supported_langs:
         logging.warning(f"Unsupported target language for URL conversion: {target_lang}")
         return url # Return original URL if language not supported
 
-    # Use regex to replace /en-us/ or /en-ca/
-    new_url, count = re.subn(r'/en-(us|ca)/', f'/{target_locale}/', url)
+    # Use regex to replace /en-us/ or /en-ca/ with /<target_lang>/
+    new_url, count = re.subn(r'/en-(us|ca)/', f'/{target_lang}/', url)
 
     if count == 0:
         logging.warning(f"Could not find /en-us/ or /en-ca/ pattern in URL: {url}")
         return url # Return original URL if pattern not found
 
-    # Apply French-specific path changes *after* locale change
+    # Apply French-specific path changes *after* language code change
     if target_lang == "fr":
         new_url = new_url.replace("/product/", "/produit/")
         new_url = new_url.replace("/men/", "/hommes/")
