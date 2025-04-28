@@ -136,18 +136,9 @@
     <div class="input-group">
         <label for="template">Select Template Style:</label>
         <select id="template">
-            <option value="featured">featured in this image</option>
-            <option value="also_featured">also featured in this image</option>
-            <option value="model_wears">model wears</option>
-            <option value="model_right">model (right) wears</option>
-            <option value="model_left">model (left) wears</option>
-            <option value="model_middle">model (middle) wears</option>
-            <option value="featured_top">featured in top image</option>
-            <option value="top_model">top image: model wears</option>
-            <option value="talent">talent name wears</option>
-            <option value="talent_right">talent name (right) wears</option>
-            <option value="talent_left">talent name (left) wears</option>
-            <option value="top_talent">top image: talent name wears</option>
+            {% for key, text in templates['en'].items() %}
+                <option value="{{ key }}">{{ text }}</option>
+            {% endfor %}
         </select>
     </div>
 
