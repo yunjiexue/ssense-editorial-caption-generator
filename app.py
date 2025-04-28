@@ -130,95 +130,6 @@ def extract_product_id(url):
     match = re.search(pattern, url)
     return match.group(1) if match else None
 
-def generate_caption(products, template, lang="en"):
-    """Generate caption for given products in specified language."""
-    if not products:
-        return ""
-
-    # Map target language to the field name in the 'categorys' collection
-    field_map = {
-        "en": "CategoryEN",
-        "fr": "CategoryFR",
-        "jp": "CategoryJP",
-        "zh": "CategoryZH"
-    }
-    target_field = field_map.get(lang, "CategoryEN") # Default to English field
-
-    # Get translated subcategories for each product using subcategory_id
-    for product in products:
-        translated_name = product.get('subcategory', 'Unknown Category') # Default fallback
-        category_doc = None
-        try:
-            subcategory_id = int(product['subcategory_id'])
-            logging.info(f"[Translation] Looking up category for subcategory_id: {subcategory_id}")
-            category_doc = db.categorys.find_one({"id": subcategory_id})
-
-            if category_doc:
-                logging.info(f"[Translation] Found category doc: {category_doc}")
-                if target_field in category_doc and category_doc[target_field]:
-                    translated_name = category_doc[target_field]
-                    logging.info(f"[Translation] Using '{target_field}': '{translated_name}'")
-                elif "CategoryEN" in category_doc and category_doc["CategoryEN"]:
-                    # Fallback to English if target language field is missing
-                    translated_name = category_doc["CategoryEN"]
-                    logging.warning(f"[Translation] Target field '{target_field}' missing. Falling back to CategoryEN: '{translated_name}'")
-                else:
-                    # Fallback to original subcategory if English also missing
-                    logging.warning(f"[Translation] Target field '{target_field}' and CategoryEN missing. Falling back to original subcategory: '{translated_name}'")
-            else:
-                logging.warning(f"[Translation] No category document found for subcategory_id: {subcategory_id}. Using original subcategory: '{translated_name}'")
-
-        except (ValueError, TypeError) as e:
-            logging.error(f"[Translation] Invalid subcategory_id format: {product.get('subcategory_id')}. Error: {e}. Using original subcategory: '{translated_name}'")
-        except Exception as e:
-            logging.error(f"[Translation] Error looking up category for subcategory_id {product.get('subcategory_id')}: {e}. Using original subcategory: '{translated_name}'")
-        
-        product['translated_subcategory'] = translated_name
-        # print(f"Final translation for {product.get('subcategory')} in {lang}: {product['translated_subcategory']}") # Old debug print
-
-    # Format the links using the fetched translations
-    if lang == "jp" or lang == "zh":
-        # Japanese & Chinese specific formatting
-        product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
-        return f"{template}{'、'.join(product_links)}。"
-    else:
-        # English and French formatting
-        if lang == "fr":
-            # French: Category first, then Brand
-            product_links = [f"[{p['translated_subcategory']} {p['brand']}]({p['urls'][lang]})" for p in products]
-            conjunction = " et "
-        else:
-            # English: Brand first, then Category
-            product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
-            conjunction = " and "
-
-        if len(product_links) == 1:
-            return f"{template} {product_links[0]}."
-
-        # Use appropriate conjunction for language
-        return f"{template} {', '.join(product_links[:-1])},{conjunction}{product_links[-1]}."
-
-def get_product_by_url(url):
-    """Get product from database by URL."""
-    try:
-        # Extract product ID from URL
-        product_id = extract_product_id(url)
-        if not product_id:
-            logging.warning(f"Could not extract product ID from URL: {url}")
-            return None
-            
-        # Try to find product
-        product = db.products.find_one({"product_id": int(product_id)})
-        if not product:
-            logging.warning(f"Product not found in database: ID {product_id}")
-            return None
-            
-        logging.info(f"Found product: {product['brand']} - {product['subcategory']} (ID: {product_id})")
-        return product
-    except Exception as e:
-        logging.error(f"Error finding product for URL {url}: {str(e)}")
-        return None
-
 @app.route('/')
 def index():
     return render_template('index.html', templates=TEMPLATES)
@@ -231,74 +142,131 @@ def generate():
         template_type = data.get('template', "featured")
         talent_name = data.get('talent_name', '')
 
-        logging.info(f"Received request to generate caption for URLs: {urls}")
-        
+        logging.info(f"Received request to generate caption for URLs: {urls} with template: {template_type}")
+
         if not urls:
             logging.warning("No URLs provided")
             return jsonify({'error': 'No URLs provided'}), 400
-        
-        products = []
+
+        products_data = [] # Store product info along with translated names
         errors = []
-        
+
+        # --- Step 1: Fetch product data and generate all language URLs --- 
         for url in urls:
+            product = None
             try:
                 product_id = extract_product_id(url)
                 if product_id:
                     logging.info(f"Looking up product ID: {product_id}")
-                    # Try to find product using string product_id
-                    product = db.products.find_one({"product_id": product_id})
-                    
-                    # If not found, try with integer product_id
+                    # Try integer first
+                    product = db.products.find_one({"product_id": int(product_id)})
+                    # If not found, try string (just in case)
                     if not product:
-                        product = db.products.find_one({"product_id": int(product_id)})
-                    
+                        product = db.products.find_one({"product_id": product_id})
+
                     if product:
                         logging.info(f"Found product: {product.get('brand')} - {product.get('subcategory')}")
-                        # Generate URLs for all languages using the *corrected* function
+                        product['original_url'] = url
+                        # Generate all language URLs
                         product['urls'] = {
-                            'en': url, # Assume input is always 'en'
+                            'en': url, # Assume input is base 'en'
                             'fr': convert_url_to_language(url, 'fr'),
-                            'jp': convert_url_to_language(url, 'jp'),
+                            'jp': convert_url_to_language(url, 'ja'),
                             'zh': convert_url_to_language(url, 'zh')
                         }
-                        products.append(product)
+                        products_data.append(product)
                     else:
                         error_msg = f"Product ID {product_id} not found in database"
                         logging.warning(error_msg)
                         errors.append(error_msg)
+                else:
+                     error_msg = f"Could not extract product ID from URL: {url}"
+                     logging.warning(error_msg)
+                     errors.append(error_msg)
             except Exception as e:
                 error_msg = f"Error processing URL {url}: {str(e)}"
                 logging.error(error_msg)
                 errors.append(error_msg)
+        
+        if not products_data:
+             return jsonify({'error': 'No valid products found for the given URLs', 'errors': errors, 'success': False})
 
-        # Generate captions in all languages
+        # --- Step 2: Generate captions for each language using the fetched data --- 
         captions = {}
+        # Map language to the category field name
+        field_map = {
+            "en": "CategoryEN",
+            "fr": "CategoryFR",
+            "jp": "CategoryJP",
+            "zh": "CategoryZH"
+        }
+
         for lang in ['en', 'fr', 'jp', 'zh']:
             try:
                 template = TEMPLATES[lang][template_type]
+                # Apply talent name replacement if needed
                 if talent_name and ('talent' in template_type or 'talent' in template.lower()):
-                    if lang == 'fr':
-                        template = template.replace('[Nom du talent]', talent_name)
-                    elif lang == 'jp':
-                        template = template.replace('[タレント名]', talent_name)
-                    elif lang == 'zh':
-                        template = template.replace('[艺人姓名]', talent_name)
+                    if lang == 'fr': template = template.replace('[Nom du talent]', talent_name)
+                    elif lang == 'jp': template = template.replace('[タレント名]', talent_name)
+                    elif lang == 'zh': template = template.replace('[艺人姓名]', talent_name)
+                    else: template = template.replace('[Talent name]', talent_name)
+                
+                product_links = []
+                for product in products_data:
+                    # Get translated category name using subcategory_id
+                    translated_name = product.get('subcategory', 'Unknown') # Default fallback
+                    category_doc = None
+                    target_field = field_map.get(lang, "CategoryEN")
+                    try:
+                        subcategory_id = int(product['subcategory_id'])
+                        category_doc = db.categorys.find_one({"id": subcategory_id})
+                        if category_doc:
+                            if target_field in category_doc and category_doc[target_field]:
+                                translated_name = category_doc[target_field]
+                            elif "CategoryEN" in category_doc and category_doc["CategoryEN"]:
+                                translated_name = category_doc["CategoryEN"]
+                                logging.warning(f"[CaptionGen] Lang '{lang}', field '{target_field}' missing for id {subcategory_id}. Using EN: '{translated_name}'")
+                            # else: keep original subcategory name as fallback
+                        else:
+                            logging.warning(f"[CaptionGen] Lang '{lang}', No category doc found for id {subcategory_id}. Using default: '{translated_name}'")
+                    except Exception as e:
+                         logging.error(f"[CaptionGen] Lang '{lang}', Error looking up category id {product.get('subcategory_id')}: {e}")
+
+                    # Format the link string based on language order
+                    link_url = product['urls'].get(lang, product['original_url']) # Use specific lang URL
+                    if lang == "fr":
+                        product_links.append(f"[{translated_name} {product['brand']}]({link_url})")
+                    else: # EN, JP, ZH
+                        product_links.append(f"[{product['brand']} {translated_name}]({link_url})")
+                
+                # Combine links into the final caption string
+                if not product_links:
+                    captions[lang] = ""
+                    continue
+                    
+                if lang == "jp" or lang == "zh":
+                    captions[lang] = f"{template}{'、'.join(product_links)}。"
+                else: # EN, FR
+                    conjunction = " et " if lang == "fr" else " and "
+                    if len(product_links) == 1:
+                        captions[lang] = f"{template} {product_links[0]}."
                     else:
-                        template = template.replace('[Talent name]', talent_name)
-                captions[lang] = generate_caption(products, template, lang)
+                        captions[lang] = f"{template} {', '.join(product_links[:-1])},{conjunction}{product_links[-1]}."
+                
                 logging.info(f"Generated caption for {lang}: {captions[lang]}")
             except Exception as e:
                 error_msg = f"Error generating caption for language {lang}: {str(e)}"
                 logging.error(error_msg)
                 errors.append(error_msg)
+                captions[lang] = "Error generating caption."
         
         return jsonify({
             'captions': captions,
             'errors': errors,
-            'success': len(products) > 0
+            'success': len(products_data) > 0
         })
     except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
+        error_msg = f"Unexpected error in /generate route: {str(e)}"
         logging.error(error_msg)
         return jsonify({
             'error': error_msg,
