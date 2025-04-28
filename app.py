@@ -36,112 +36,6 @@ except Exception as e:
     logging.error(f"Error connecting to MongoDB: {str(e)}")
     raise
 
-def get_translated_subcategory(subcategory_en, target_lang):
-    """Get translated subcategory from categorys collection."""
-    try:
-        logging.info(f"[Translation] Attempting to translate '{subcategory_en}' to {target_lang}")
-        # Map target language to field name
-        field_map = {
-            "en": "CategoryEN",
-            "fr": "CategoryFR",
-            "jp": "CategoryJP",
-            "zh": "CategoryZH"
-        }
-
-        field_name = field_map.get(target_lang)
-        if not field_name:
-            logging.warning(f"[Translation] Unsupported language: {target_lang}")
-            return subcategory_en
-
-        # Try exact match on category first (more reliable than ID)
-        exact_query = {"category": subcategory_en}
-        logging.info(f"[Translation] Trying exact match query: {exact_query}")
-        translation = db.categorys.find_one(exact_query)
-        if translation and field_name in translation:
-            translated_value = translation[field_name]
-            logging.info(f"[Translation] Found exact match: '{translated_value}'")
-            return translated_value
-        else:
-             logging.info(f"[Translation] No exact match found or field '{field_name}' missing in result: {translation}")
-
-        # If no exact match, try case-insensitive search
-        insensitive_query = {"category": {"$regex": f"^{re.escape(subcategory_en)}$", "$options": "i"}}
-        logging.info(f"[Translation] Trying case-insensitive query: {insensitive_query}")
-        translation = db.categorys.find_one(insensitive_query)
-        if translation and field_name in translation:
-            translated_value = translation[field_name]
-            logging.info(f"[Translation] Found case-insensitive match: '{translated_value}'")
-            return translated_value
-        else:
-            logging.info(f"[Translation] No case-insensitive match found or field '{field_name}' missing in result: {translation}")
-
-        # Fallback if no translation found
-        logging.warning(f"[Translation] No translation found for '{subcategory_en}' in {target_lang}. Falling back to English.")
-        return subcategory_en
-    except Exception as e:
-        logging.error(f"[Translation] Error looking up translation for '{subcategory_en}' to {target_lang}: {e}")
-        return subcategory_en # Fallback on error
-
-# Caption templates for each language - UPDATED
-TEMPLATES = {
-    "en": {
-        "featured": "Featured In This Image:",
-        "also_featured": "Also Featured In This Image:",
-        "model_wears": "Model wears",
-        "model_right": "Model (right) wears",
-        "model_left": "Model (left) wears",
-        "model_middle": "Model (middle) wears",
-        "featured_top": "Featured In Top Image:",
-        "top_model": "Top Image: Model wears",
-        "talent": "[Talent name] wears",
-        "talent_right": "[Talent name] (right) wears",
-        "talent_left": "[Talent name] (left) wears",
-        "top_talent": "Top Image: [Talent name] wears"
-    },
-    "fr": {
-        "featured": "En vedette sur cette image:",
-        "also_featured": "Aussi en vedette sur cette image:",
-        "model_wears": "Le modèle porte:",
-        "model_right": "Le modèle (à droite) porte:",
-        "model_left": "Le modèle (à gauche) porte:",
-        "model_middle": "Le modèle (au centre) porte:",
-        "featured_top": "En vedette sur l'image du haut:",
-        "top_model": "Sur l'image du haut, le modèle porte:",
-        "talent": "[Talent name] porte:",
-        "talent_right": "[Talent name] (à droite) porte:",
-        "talent_left": "[Talent name] (à gauche) porte:",
-        "top_talent": "Sur l'image précédente, [Talent name] porte:"
-    },
-    "jp": {
-        "featured": "画像のアイテム：",
-        "also_featured": "画像のアイテム：",
-        "model_wears": "モデル着用アイテム：",
-        "model_right": "モデル (右) ：",
-        "model_left": "モデル (左) ：",
-        "model_middle": "モデル (中央) ：",
-        "featured_top": "冒頭の画像のアイテム：",
-        "top_model": "冒頭の画像 モデル着用アイテム：",
-        "talent": "[Talent name] 着用アイテム：",
-        "talent_right": "[Talent name] (右) ：",
-        "talent_left": "[Talent name] (左) ：",
-        "top_talent": "冒頭の画像 [Talent name] 着用アイテム："
-    },
-    "zh": {
-        "featured": "本图单品：",
-        "also_featured": "本图单品：",
-        "model_wears": "模特身着：",
-        "model_right": "模特（右）身着：",
-        "model_left": "模特（左）身着：",
-        "model_middle": "模特（中）身着：",
-        "featured_top": "顶图单品：",
-        "top_model": "顶图模特身着：",
-        "talent": "[Talent name]身着：",
-        "talent_right": "[Talent name]（右）身着：",
-        "talent_left": "[Talent name]（左）身着：",
-        "top_talent": "顶图[Talent name]身着："
-    }
-}
-
 def convert_url_to_language(url, target_lang):
     """Convert English (en-us or en-ca) URL to target language URL."""
     if target_lang == "en":
@@ -185,33 +79,51 @@ def generate_caption(products, template, lang="en"):
     """Generate caption for given products in specified language."""
     if not products:
         return ""
-    
-    # Get translated subcategories for each product
+
+    # Map target language to the field name in the 'categorys' collection
+    field_map = {
+        "en": "CategoryEN",
+        "fr": "CategoryFR",
+        "jp": "CategoryJP",
+        "zh": "CategoryZH"
+    }
+    target_field = field_map.get(lang, "CategoryEN") # Default to English field
+
+    # Get translated subcategories for each product using subcategory_id
     for product in products:
-        if lang == "en":
-            # For English, look up CategoryEN and use it exactly as stored
-            category_doc = db.categorys.find_one({"id": int(product['subcategory_id'])})
-            if category_doc and 'CategoryEN' in category_doc:
-                # Use CategoryEN exactly as it appears in the database (singular form)
-                product['translated_subcategory'] = category_doc['CategoryEN']
-                print(f"Found CategoryEN for ID {product['subcategory_id']}: {category_doc['CategoryEN']}")
+        translated_name = product.get('subcategory', 'Unknown Category') # Default fallback
+        category_doc = None
+        try:
+            subcategory_id = int(product['subcategory_id'])
+            logging.info(f"[Translation] Looking up category for subcategory_id: {subcategory_id}")
+            category_doc = db.categorys.find_one({"id": subcategory_id})
+
+            if category_doc:
+                logging.info(f"[Translation] Found category doc: {category_doc}")
+                if target_field in category_doc and category_doc[target_field]:
+                    translated_name = category_doc[target_field]
+                    logging.info(f"[Translation] Using '{target_field}': '{translated_name}'")
+                elif "CategoryEN" in category_doc and category_doc["CategoryEN"]:
+                    # Fallback to English if target language field is missing
+                    translated_name = category_doc["CategoryEN"]
+                    logging.warning(f"[Translation] Target field '{target_field}' missing. Falling back to CategoryEN: '{translated_name}'")
+                else:
+                    # Fallback to original subcategory if English also missing
+                    logging.warning(f"[Translation] Target field '{target_field}' and CategoryEN missing. Falling back to original subcategory: '{translated_name}'")
             else:
-                print(f"No CategoryEN found for ID {product['subcategory_id']}, using fallback")
-                # Convert fallback to singular if possible by removing trailing 's'
-                fallback = product.get('subcategory', 'Unknown Category').lower()
-                if fallback.endswith('s'):
-                    fallback = fallback[:-1]
-                product['translated_subcategory'] = fallback
-        else:
-            product['translated_subcategory'] = get_translated_subcategory(product['subcategory'], lang)
-        print(f"Final translation for {product.get('subcategory')} in {lang}: {product['translated_subcategory']}")
-    
-    if lang == "jp":
-        # Japanese specific formatting
-        product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
-        return f"{template}{'、'.join(product_links)}。"
-    elif lang == "zh":
-        # Chinese specific formatting
+                logging.warning(f"[Translation] No category document found for subcategory_id: {subcategory_id}. Using original subcategory: '{translated_name}'")
+
+        except (ValueError, TypeError) as e:
+            logging.error(f"[Translation] Invalid subcategory_id format: {product.get('subcategory_id')}. Error: {e}. Using original subcategory: '{translated_name}'")
+        except Exception as e:
+            logging.error(f"[Translation] Error looking up category for subcategory_id {product.get('subcategory_id')}: {e}. Using original subcategory: '{translated_name}'")
+        
+        product['translated_subcategory'] = translated_name
+        # print(f"Final translation for {product.get('subcategory')} in {lang}: {product['translated_subcategory']}") # Old debug print
+
+    # Format the links using the fetched translations
+    if lang == "jp" or lang == "zh":
+        # Japanese & Chinese specific formatting
         product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
         return f"{template}{'、'.join(product_links)}。"
     else:
@@ -224,10 +136,10 @@ def generate_caption(products, template, lang="en"):
             # English: Brand first, then Category
             product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
             conjunction = " and "
-            
+
         if len(product_links) == 1:
             return f"{template} {product_links[0]}."
-        
+
         # Use appropriate conjunction for language
         return f"{template} {', '.join(product_links[:-1])},{conjunction}{product_links[-1]}."
 
