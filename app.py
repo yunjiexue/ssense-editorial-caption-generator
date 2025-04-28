@@ -193,12 +193,12 @@ def generate():
 
         # --- Step 2: Generate captions for each language using the fetched data --- 
         captions = {}
-        # Map language to the category field name
+        # Map language to the NEW category field name
         field_map = {
-            "en": "CategoryEN",
-            "fr": "CategoryFR",
-            "jp": "CategoryJP",
-            "zh": "CategoryZH"
+            "en": "EN Category", # Updated
+            "fr": "FR Category", # Updated
+            "jp": "JP Category", # Updated
+            "zh": "ZH Category"  # Updated
         }
 
         for lang in ['en', 'fr', 'jp', 'zh']:
@@ -213,24 +213,26 @@ def generate():
                 
                 product_links = []
                 for product in products_data:
-                    # Get translated category name using subcategory_id
+                    # Get translated category name using subcategory_id and NEW field names
                     translated_name = product.get('subcategory', 'Unknown') # Default fallback
                     category_doc = None
-                    target_field = field_map.get(lang, "CategoryEN")
+                    target_field = field_map.get(lang, "EN Category") # Default to NEW English field
                     try:
                         subcategory_id = int(product['subcategory_id'])
-                        category_doc = db.categorys.find_one({"id": subcategory_id})
+                        # Query using the NEW ID field name
+                        category_doc = db.categorys.find_one({"ID": subcategory_id})
                         if category_doc:
                             if target_field in category_doc and category_doc[target_field]:
                                 translated_name = category_doc[target_field]
-                            elif "CategoryEN" in category_doc and category_doc["CategoryEN"]:
-                                translated_name = category_doc["CategoryEN"]
+                            elif "EN Category" in category_doc and category_doc["EN Category"]:
+                                # Fallback to NEW English field
+                                translated_name = category_doc["EN Category"]
                                 logging.warning(f"[CaptionGen] Lang '{lang}', field '{target_field}' missing for id {subcategory_id}. Using EN: '{translated_name}'")
                             # else: keep original subcategory name as fallback
                         else:
-                            logging.warning(f"[CaptionGen] Lang '{lang}', No category doc found for id {subcategory_id}. Using default: '{translated_name}'")
+                            logging.warning(f"[CaptionGen] Lang '{lang}', No category doc found for ID: {subcategory_id}. Using default: '{translated_name}'")
                     except Exception as e:
-                         logging.error(f"[CaptionGen] Lang '{lang}', Error looking up category id {product.get('subcategory_id')}: {e}")
+                         logging.error(f"[CaptionGen] Lang '{lang}', Error looking up category ID {product.get('subcategory_id')}: {e}")
 
                     # Format the link string based on language order
                     link_url = product['urls'].get(lang, product['original_url']) # Use specific lang URL
