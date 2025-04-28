@@ -103,6 +103,15 @@
             color: #666;
             font-weight: bold;
         }
+        .db-note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            margin-bottom: 0;
+        }
+        .db-note + .db-note {
+             margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -111,10 +120,10 @@
     <div class="input-group">
         <label for="urls">Enter English Product URLs (one per line):</label>
         <textarea id="urls" placeholder="https://www.ssense.com/en-us/men/product/..."></textarea>
-        <p style="font-size: 12px; color: #666; margin-top: 10px; margin-bottom: 0;">
+        <p class="db-note">
             Note: The database is updated every Friday, currently including only SS25 and FW25 products (SKUs starting with 251 or 252). Products from other seasons are not available.
         </p>
-        <p style="font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;">
+        <p class="db-note">
             If you are unable to locate an SS25 or FW25 product, it is likely due to a database update delay. Please contact Yunjie (yunjie.xue@ssense.com) to request a refresh.
         </p>
     </div>
