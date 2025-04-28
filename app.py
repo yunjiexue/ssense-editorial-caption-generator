@@ -39,47 +39,48 @@ except Exception as e:
 def get_translated_subcategory(subcategory_en, target_lang):
     """Get translated subcategory from categorys collection."""
     try:
+        logging.info(f"[Translation] Attempting to translate '{subcategory_en}' to {target_lang}")
         # Map target language to field name
         field_map = {
             "en": "CategoryEN",
-            "fr": "CategoryFR", 
+            "fr": "CategoryFR",
             "jp": "CategoryJP",
             "zh": "CategoryZH"
         }
-        
+
         field_name = field_map.get(target_lang)
         if not field_name:
-            print(f"Unsupported language: {target_lang}")  # Debug log
+            logging.warning(f"[Translation] Unsupported language: {target_lang}")
             return subcategory_en
 
-        # Try to find by subcategory_id first (for English)
-        if target_lang == "en" and isinstance(subcategory_en, (int, str)):
-            try:
-                subcategory_id = int(subcategory_en) if isinstance(subcategory_en, str) else subcategory_en
-                translation = db.categorys.find_one({"id": subcategory_id})
-                if translation and field_name in translation:
-                    print(f"Found translation by ID for {subcategory_en}: {translation[field_name]}")  # Debug log
-                    return translation[field_name]
-            except (ValueError, TypeError):
-                pass
-            
-        # If not found by ID or for other languages, try exact match on category
-        translation = db.categorys.find_one({"category": subcategory_en})
+        # Try exact match on category first (more reliable than ID)
+        exact_query = {"category": subcategory_en}
+        logging.info(f"[Translation] Trying exact match query: {exact_query}")
+        translation = db.categorys.find_one(exact_query)
         if translation and field_name in translation:
-            print(f"Found translation for {subcategory_en}: {translation[field_name]}")  # Debug log
-            return translation[field_name]
-            
+            translated_value = translation[field_name]
+            logging.info(f"[Translation] Found exact match: '{translated_value}'")
+            return translated_value
+        else:
+             logging.info(f"[Translation] No exact match found or field '{field_name}' missing in result: {translation}")
+
         # If no exact match, try case-insensitive search
-        translation = db.categorys.find_one({"category": {"$regex": f"^{subcategory_en}$", "$options": "i"}})
+        insensitive_query = {"category": {"$regex": f"^{re.escape(subcategory_en)}$", "$options": "i"}}
+        logging.info(f"[Translation] Trying case-insensitive query: {insensitive_query}")
+        translation = db.categorys.find_one(insensitive_query)
         if translation and field_name in translation:
-            print(f"Found case-insensitive translation for {subcategory_en}: {translation[field_name]}")  # Debug log
-            return translation[field_name]
-            
-        print(f"No translation found for {subcategory_en} in {target_lang}")  # Debug log
-        return subcategory_en  # Fallback to English if no translation found
-    except Exception as e:
-        print(f"Error looking up translation: {e}")  # Debug log
+            translated_value = translation[field_name]
+            logging.info(f"[Translation] Found case-insensitive match: '{translated_value}'")
+            return translated_value
+        else:
+            logging.info(f"[Translation] No case-insensitive match found or field '{field_name}' missing in result: {translation}")
+
+        # Fallback if no translation found
+        logging.warning(f"[Translation] No translation found for '{subcategory_en}' in {target_lang}. Falling back to English.")
         return subcategory_en
+    except Exception as e:
+        logging.error(f"[Translation] Error looking up translation for '{subcategory_en}' to {target_lang}: {e}")
+        return subcategory_en # Fallback on error
 
 # Caption templates for each language - UPDATED
 TEMPLATES = {
