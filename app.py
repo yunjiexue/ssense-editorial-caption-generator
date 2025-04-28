@@ -206,21 +206,28 @@ def generate_caption(products, template, lang="en"):
         print(f"Final translation for {product.get('subcategory')} in {lang}: {product['translated_subcategory']}")
     
     if lang == "jp":
-        # Japanese specific formatting - remove space after template
+        # Japanese specific formatting
         product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
         return f"{template}{'、'.join(product_links)}。"
     elif lang == "zh":
-        # Chinese specific formatting - remove space after template
+        # Chinese specific formatting
         product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
         return f"{template}{'、'.join(product_links)}。"
     else:
         # English and French formatting
-        product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
+        if lang == "fr":
+            # French: Category first, then Brand
+            product_links = [f"[{p['translated_subcategory']} {p['brand']}]({p['urls'][lang]})" for p in products]
+            conjunction = " et "
+        else:
+            # English: Brand first, then Category
+            product_links = [f"[{p['brand']} {p['translated_subcategory']}]({p['urls'][lang]})" for p in products]
+            conjunction = " and "
+            
         if len(product_links) == 1:
             return f"{template} {product_links[0]}."
         
         # Use appropriate conjunction for language
-        conjunction = " and " if lang == "en" else " et "
         return f"{template} {', '.join(product_links[:-1])},{conjunction}{product_links[-1]}."
 
 def get_product_by_url(url):
